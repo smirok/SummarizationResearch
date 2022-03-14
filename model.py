@@ -1,6 +1,7 @@
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, DataCollatorForSeq2Seq
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 from datasets import load_metric
+from summa.summarizer import summarize
 
 import numpy as np
 import nltk
@@ -59,6 +60,7 @@ class BartModel(AbstractModel):
             predict_with_generate=True,
             logging_steps=logging_steps,
             push_to_hub=False,
+            disable_tqdm=True
         )
 
         self.trainer = Seq2SeqTrainer(
@@ -132,3 +134,20 @@ class BartModel(AbstractModel):
         # Extract the median scores
         result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
         return {k: round(v, 4) for k, v in result.items()}
+
+
+class TextRank(AbstractModel):
+    def __init__(self, n_words=64, max_source_length=None):
+        super().__init__()
+        self.n_words = n_words
+        self.max_source_length = max_source_length
+
+    def train(self, train_dataset, val_dataset=None):
+        pass
+
+    def predict(self, test_dataset):
+        if self.max_source_length is not None:
+            return [summarize(article[:self.max_source_length], words=self.n_words) for article in
+                    test_dataset['articles']]
+        else:
+            return [summarize(article, words=self.n_words) for article in test_dataset['articles']]
