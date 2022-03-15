@@ -151,3 +151,28 @@ class TextRank(AbstractModel):
                     test_dataset['articles']]
         else:
             return [summarize(article, words=self.n_words) for article in test_dataset['articles']]
+
+
+class BartTextRank(AbstractModel):
+    def __init__(self, model_checkpoint="facebook/bart-base", n_words=64):
+        super().__init__()
+
+        self.bart = BartModel(model_checkpoint)
+        self.text_rank = TextRank(n_words)
+
+    def train(self, train_dataset, val_dataset=None):
+        self.bart.train(train_dataset, val_dataset)
+
+    def predict(self, test_dataset):
+        test = test_dataset.map(lambda dataset: self.bart.__preprocess_function__(dataset, self.bart.tokenizer,
+                                                                                  self.bart.MAX_SOURCE_LENGTH,
+                                                                                  self.bart.MAX_TARGET_LENGTH),
+                                batched=True)
+
+        bart_predictions = [self.bart.tokenizer.decode(prediction) for prediction in
+                            self.bart.predict(test).predictions]
+        text_rank_predictions = self.text_rank.predict(test_dataset)
+
+        test['articles'] = [bart_predictions[i] + " " + text_rank_predictions[i] for i in range(len(test_dataset))]
+
+        return self.bart.predict(test)
