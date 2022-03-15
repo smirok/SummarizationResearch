@@ -78,3 +78,22 @@ class MultiNewsDataset(AbstractDataset):
         self.train = dataset['train']
         self.val = dataset['validation']
         self.test = dataset['test']
+
+
+class ArxivDataset(AbstractDataset):
+    def __init__(self, path=None):
+        super().__init__(path)
+
+        self.train = None  # TODO: dataset size is about 14 gb
+
+        with open(os.path.join(path, "arxiv-dataset", "val.txt")) as file:
+            lines = file.readlines()
+            articles = list(map(lambda elem: '\n'.join(json.loads(elem)['article_text']), lines))
+            summaries = list(map(lambda elem: '\n'.join(json.loads(elem)['abstract_text']), lines))
+            self.val = Dataset.from_dict({'articles': articles, 'summaries': summaries})
+
+        with open(os.path.join(path, "arxiv-dataset", "test.txt")) as file:
+            lines = file.readlines()
+            articles = list(map(lambda elem: '\n'.join(json.loads(elem)['article_text']), lines))
+            summaries = list(map(lambda elem: '\n'.join(json.loads(elem)['abstract_text']), lines))
+            self.test = Dataset.from_dict({'articles': articles, 'summaries': summaries})
