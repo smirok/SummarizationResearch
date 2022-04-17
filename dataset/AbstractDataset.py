@@ -1,3 +1,4 @@
+import typing
 from abc import ABC
 
 
@@ -9,6 +10,6 @@ class AbstractDataset(ABC):
 
         self.path = path
         self.multi_articles = multi_articles
-        self.train = None
-        self.val = None
-        self.test = None
+        self.train: typing.Optional[Dataset] = None
+        self.val: typing.Optional[Dataset] = None
+        self.test: typing.Optional[Dataset] = None
