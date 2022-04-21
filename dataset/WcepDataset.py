@@ -4,7 +4,7 @@ import os
 
 from datasets import Dataset
 
-from AbstractDataset import AbstractDataset
+from dataset import AbstractDataset
 
 
 class WcepDataset(AbstractDataset):

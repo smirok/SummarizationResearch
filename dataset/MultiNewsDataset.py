@@ -1,4 +1,4 @@
-from AbstractDataset import AbstractDataset
+from dataset import AbstractDataset
 from datasets import load_dataset
 
 from util import delete_last_sep, process_separator

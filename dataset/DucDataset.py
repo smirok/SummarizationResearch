@@ -1,7 +1,7 @@
 import copy
 import os
 
-from AbstractDataset import AbstractDataset
+from dataset import AbstractDataset
 from datasets import Dataset
 
 
