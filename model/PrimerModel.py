@@ -3,7 +3,7 @@ import copy
 import torch
 from transformers import AutoTokenizer, LEDForConditionalGeneration
 
-from AbstractModel import AbstractModel
+from model import AbstractModel
 
 
 class PrimerModel(AbstractModel):

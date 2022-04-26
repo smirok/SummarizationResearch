@@ -1,5 +1,5 @@
 from datasets import Dataset
-from AbstractModel import AbstractModel
+from model import AbstractModel
 from summa.summarizer import summarize
 from transformers import AutoTokenizer
 
