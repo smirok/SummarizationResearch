@@ -1,7 +1,5 @@
 from torch import nn
-from transformers import BartForConditionalGeneration, AutoModel
-from transformers.modeling_outputs import TokenClassifierOutput, Seq2SeqLMOutput
-import torch.nn.functional as F
+from transformers import AutoModel
 
 
 class TransferBartModule(nn.Module):
@@ -12,8 +10,7 @@ class TransferBartModule(nn.Module):
         self.sentence_number = sentence_number
         self.importance_threshold = importance_threshold
 
-        self.fc1 = nn.Linear(768, 100)
-        self.fc2 = nn.Linear(100, self.sentence_number)
+        self.fc1 = nn.Linear(768, self.sentence_number)
 
     def forward(self, input_ids=None, attention_mask=None):
         outputs = self.bart(
@@ -21,8 +18,5 @@ class TransferBartModule(nn.Module):
             attention_mask=attention_mask
         )
 
-        # sequence_output has the following shape: (batch_size, sequence_length, 768)
         logits = self.fc1(outputs.last_hidden_state[:, 0, :].view(-1, 768))  ## extract the 1st token's embeddings
-        logits = F.relu(logits)
-        logits = self.fc2(logits)
         return logits
