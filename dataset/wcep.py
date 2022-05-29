@@ -8,7 +8,11 @@ from dataset import AbstractDataset
 
 
 class WcepDataset(AbstractDataset):
-    def __init__(self, path=None, multi_articles=False):
+    def __init__(
+            self,
+            path=None,
+            multi_articles=False
+    ):
         super().__init__(path, multi_articles)
 
         self.train = self.__wrap_data__(

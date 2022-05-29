@@ -1,9 +1,15 @@
 import typing
 from abc import ABC
 
+from datasets import Dataset
+
 
 class AbstractDataset(ABC):
-    def __init__(self, path=None, multi_articles=False):
+    def __init__(
+            self,
+            path=None,
+            multi_articles=False
+    ):
         self.DOC_SEP = "|||||"
         if not multi_articles:
             self.DOC_SEP = "\n"

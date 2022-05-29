@@ -1,14 +1,18 @@
 from dataset import AbstractDataset
-from datasets import load_dataset
+from datasets import load_dataset, DownloadMode
 
 from util import delete_last_sep, process_separator
 
 
 class MultiNewsDataset(AbstractDataset):
-    def __init__(self, path=None, multi_articles=True):
+    def __init__(
+            self,
+            path=None,
+            multi_articles=True
+    ):
         super().__init__(path, multi_articles)
 
-        dataset = load_dataset('multi_news', ignore_verifications=True, download_mode='force_redownload')
+        dataset = load_dataset('multi_news', ignore_verifications=True, download_mode=DownloadMode.FORCE_REDOWNLOAD)
         dataset = dataset.rename_column('document', 'articles').rename_column('summary', 'summaries').map(
             delete_last_sep
         )

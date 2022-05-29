@@ -6,7 +6,11 @@ from datasets import Dataset
 
 
 class ArxivDataset(AbstractDataset):
-    def __init__(self, path=None, multi_articles=False):
+    def __init__(
+            self,
+            path=None,
+            multi_articles=False
+    ):
         super().__init__(path, multi_articles)
 
         self.train = None  # TODO: dataset size is about 14 gb

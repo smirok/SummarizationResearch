@@ -6,7 +6,11 @@ from datasets import Dataset
 
 
 class Duc2004Dataset(AbstractDataset):
-    def __init__(self, path=None, multi_articles=False):
+    def __init__(
+            self,
+            path=None,
+            multi_articles=False
+    ):
         super().__init__(path, multi_articles)
 
         article_path = os.path.join(path, "DUC2004_Summarization_Documents", "duc2004_testdata", "tasks1and2",
