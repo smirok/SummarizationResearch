@@ -5,12 +5,20 @@ from transformers import AutoTokenizer
 
 
 class TextRankModel(AbstractModel):
-    def __init__(self, max_target_length, max_source_length):
-        super().__init__()
-        self.max_target_length = max_target_length
-        self.max_source_length = max_source_length
+    def __init__(
+            self,
+            max_target_length,
+            max_source_length,
+            save_path="./textrank-model/",
+            tokenizer_checkpoint="facebook/bart-base"
+    ):
+        super().__init__(
+            max_target_length=max_target_length,
+            max_source_length=max_source_length,
+            save_path=save_path
+        )
 
-        self.tokenizer = AutoTokenizer.from_pretrained("facebook/bart-base")
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_checkpoint)
         self.test_dataset = None
 
     def train(self, train_dataset, val_dataset=None):

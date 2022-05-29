@@ -1,14 +1,13 @@
 from torch import nn
-from transformers import AutoModel
+from transformers import BartModel
 
 
 class TransferBartModule(nn.Module):
 
-    def __init__(self, model_checkpoint, sentence_number=128, importance_threshold=0.7):
+    def __init__(self, model_checkpoint, sentence_number=10):
         super(TransferBartModule, self).__init__()
-        self.bart = AutoModel.from_pretrained(model_checkpoint)
+        self.bart = BartModel.from_pretrained(model_checkpoint)
         self.sentence_number = sentence_number
-        self.importance_threshold = importance_threshold
 
         self.fc1 = nn.Linear(768, self.sentence_number)
 

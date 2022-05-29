@@ -9,17 +9,26 @@ from model import AbstractModel
 class PrimerModel(AbstractModel):
     DOCSEP_TOKEN = "|||||"
 
-    def __init__(self, max_target_length, max_source_length):
-        super().__init__()
-        self.max_target_length = max_target_length
-        self.max_source_length = max_source_length
+    def __init__(
+            self,
+            max_target_length=64,
+            max_source_length=1024,
+            save_path="./primer-model/",
+            model_checkpoint='allenai/PRIMERA',
+            tokenizer_checkpoint='allenai/PRIMERA'
+    ):
+        super().__init__(
+            max_target_length=max_target_length,
+            max_source_length=max_source_length,
+            save_path=save_path
+        )
+        self.test_dataset = None
 
-        self.tokenizer = AutoTokenizer.from_pretrained('allenai/PRIMERA')
-        self.model = LEDForConditionalGeneration.from_pretrained('allenai/PRIMERA')
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_checkpoint)
+        self.model = LEDForConditionalGeneration.from_pretrained(model_checkpoint)
         self.model.gradient_checkpointing_enable()
         self.PAD_TOKEN_ID = self.tokenizer.pad_token_id
         self.DOCSEP_TOKEN_ID = self.tokenizer.convert_tokens_to_ids("<doc-sep>")
-        self.test_dataset = None
 
     def train(self, train_dataset, val_dataset=None):
         pass
