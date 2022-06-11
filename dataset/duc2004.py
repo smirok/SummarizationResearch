@@ -25,7 +25,7 @@ class Duc2004Dataset(AbstractDataset):
         summaries = []
         for reference in reference_dirs:
             with open(reference) as file:
-                summaries.append(file.read())
+                summaries.append(file.read().replace('\n', ''))
 
         self.train = Dataset.from_dict({'articles': articles, 'summaries': summaries})
         self.test = copy.deepcopy(self.train)
@@ -34,6 +34,6 @@ class Duc2004Dataset(AbstractDataset):
         article_parts = []
         for filename in os.listdir(path):
             with open(os.path.join(path, filename), "r") as file:
-                article_parts.append(file.read())
+                article_parts.append(file.read().replace('\n', ''))
 
         return self.DOC_SEP.join(article_parts)
