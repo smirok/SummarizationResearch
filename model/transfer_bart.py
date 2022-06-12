@@ -2,10 +2,12 @@ import numpy as np
 
 from datasets import load_metric
 from transformers import BartForSequenceClassification, TrainingArguments, BartTokenizer, DataCollatorWithPadding, \
-    IntervalStrategy
+    IntervalStrategy, Seq2SeqTrainer, Seq2SeqTrainingArguments, BartForConditionalGeneration, \
+    DataCollatorForSeq2Seq
 
 from rank_text import rank_text
 from model import AbstractModel, TransferTrainer
+from util import postprocess_text
 
 
 class TransferBartModel(AbstractModel):
@@ -43,6 +45,7 @@ class TransferBartModel(AbstractModel):
             output_attentions=False,
             output_hidden_states=False
         )
+        self.sum_model = BartForConditionalGeneration.from_pretrained(model_checkpoint)
         self.data_collator = DataCollatorWithPadding(self.tokenizer)
 
         self.args = TrainingArguments(
@@ -82,19 +85,36 @@ class TransferBartModel(AbstractModel):
         self.trainer.train()
 
     def predict(self, test_dataset):
-        self.test_dataset = test_dataset.map(lambda dataset: self.__preprocess_function__(dataset, self.tokenizer,
-                                                                                          self.max_source_length),
-                                             batched=True)
+        self.test_dataset = test_dataset.map(
+            lambda dataset: self.__preprocess_normal_function__(dataset, self.tokenizer,
+                                                                self.max_source_length),
+            batched=True)
 
-        if self.trainer is None:
-            self.trainer = TransferTrainer(
-                self.model,
-                self.args,
-                data_collator=self.data_collator,
-                tokenizer=self.tokenizer
-            )
+        self.predict_args = Seq2SeqTrainingArguments(
+            output_dir=self.save_path,
+            evaluation_strategy=IntervalStrategy.EPOCH,
+            learning_rate=5.6e-6,
+            per_device_train_batch_size=self.batch_size,
+            per_device_eval_batch_size=self.batch_size,
+            weight_decay=0.01,
+            save_total_limit=1,
+            num_train_epochs=self.epochs,
+            predict_with_generate=True,
+            logging_strategy=IntervalStrategy.EPOCH,
+            push_to_hub=False,
+        )
+        self.sum_model.model = self.model.model
+        self.data_collator_predict = DataCollatorForSeq2Seq(self.tokenizer, model=self.sum_model)
 
-        return self.trainer.predict(self.test_dataset, max_length=self.max_target_length)
+        self.trainer_for_predict = Seq2SeqTrainer(
+            self.sum_model,
+            self.predict_args,
+            data_collator=self.data_collator_predict,
+            tokenizer=self.tokenizer,
+            compute_metrics=self.compute_metrics,
+        )
+
+        return self.trainer_for_predict.predict(self.test_dataset, max_length=self.max_target_length)
 
     def __preprocess_function__(self, dataset, tokenizer, max_source_length):
         model_inputs = tokenizer(
@@ -125,3 +145,42 @@ class TransferBartModel(AbstractModel):
 
         model_inputs["labels"] = results
         return model_inputs
+
+    @staticmethod
+    def __preprocess_normal_function__(dataset, tokenizer, max_source_length):
+        model_inputs = tokenizer(
+            dataset['articles'],
+            max_length=max_source_length,
+            padding='max_length',
+            truncation=True
+        )
+
+        with tokenizer.as_target_tokenizer():
+            labels = tokenizer(dataset['summaries'])
+
+        labels["input_ids"] = [
+            [(l if l != tokenizer.pad_token_id else -100) for l in label] for label in labels["input_ids"]
+        ]
+
+        model_inputs["labels"] = labels["input_ids"]
+        return model_inputs
+
+    def compute_metrics(self, eval_pred):
+        preds, labels = eval_pred
+        if isinstance(preds, tuple):
+            preds = preds[0]
+
+        decoded_preds = self.tokenizer.batch_decode(preds, skip_special_tokens=True)
+        labels = np.where(labels != -100, labels, self.tokenizer.pad_token_id)
+        decoded_labels = self.tokenizer.batch_decode(labels, skip_special_tokens=True)
+
+        decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
+
+        result = self.rouge_score.compute(
+            predictions=decoded_preds,
+            references=decoded_labels,
+            use_stemmer=True
+        )
+
+        result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
+        return {k: round(v, 4) for k, v in result.items()}

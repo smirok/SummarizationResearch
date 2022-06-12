@@ -1,5 +1,5 @@
 from dataset import AbstractDataset
-from datasets import load_dataset, DownloadMode
+from datasets import load_dataset
 
 from util import delete_last_sep, process_separator
 
@@ -12,7 +12,7 @@ class MultiNewsDataset(AbstractDataset):
     ):
         super().__init__(path, multi_articles)
 
-        dataset = load_dataset('multi_news', ignore_verifications=True, download_mode=DownloadMode.FORCE_REDOWNLOAD)
+        dataset = load_dataset('multi_news', ignore_verifications=True)
         dataset = dataset.rename_column('document', 'articles').rename_column('summary', 'summaries').map(
             delete_last_sep
         )
