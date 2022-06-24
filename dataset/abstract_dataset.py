@@ -10,9 +10,9 @@ class AbstractDataset(ABC):
             path=None,
             multi_articles=False
     ):
-        self.DOC_SEP = "|||||"
+        self.DOC_SEP = " ||||| "
         if not multi_articles:
-            self.DOC_SEP = "\n"
+            self.DOC_SEP = " \n "
 
         self.path = path
         self.multi_articles = multi_articles

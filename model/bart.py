@@ -1,10 +1,11 @@
+import gensim
 import numpy as np
 
 from datasets import load_metric
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments, \
     Seq2SeqTrainer, IntervalStrategy
 
-from model import AbstractModel
+from model import AbstractModel, BarycenterModel
 from util import postprocess_text
 
 
@@ -88,7 +89,7 @@ class BartModel(AbstractModel):
                 compute_metrics=self.compute_metrics,
             )
 
-        return self.trainer.predict(self.test_dataset, max_length=self.max_target_length)
+        return self.trainer.predict(test_dataset, max_length=self.max_target_length)
 
     @staticmethod
     def __preprocess_function__(dataset, tokenizer, max_source_length):
@@ -120,11 +121,16 @@ class BartModel(AbstractModel):
 
         decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
 
-        result = self.rouge_score.compute(
+        rouge_result = self.rouge_score.compute(
             predictions=decoded_preds,
             references=decoded_labels,
             use_stemmer=True
         )
 
-        result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
-        return {k: round(v, 4) for k, v in result.items()}
+        rouge_result = {key: round(value.mid.fmeasure * 100, 4) for key, value in rouge_result.items()}
+
+        barycenter_result = np.array(BarycenterModel.calculate_texts_barycenter(decoded_preds))
+        barycenter_labels = np.array(self.val_dataset['barycenters'])
+        barycenter_result = {'barycenters': np.mean(np.linalg.norm(barycenter_result - barycenter_labels, axis=1))}
+
+        return rouge_result.update(barycenter_result)

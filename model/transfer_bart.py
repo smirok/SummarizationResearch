@@ -6,7 +6,7 @@ from transformers import BartForSequenceClassification, TrainingArguments, BartT
     DataCollatorForSeq2Seq
 
 from rank_text import rank_text
-from model import AbstractModel, TransferTrainer
+from model import AbstractModel, TransferTrainer, BarycenterModel
 from util import postprocess_text
 
 
@@ -80,6 +80,7 @@ class TransferBartModel(AbstractModel):
             eval_dataset=self.val_dataset,
             data_collator=self.data_collator,
             tokenizer=self.tokenizer,
+            compute_metrics=self.compute_metrics,
         )
 
         self.trainer.train()
@@ -176,11 +177,16 @@ class TransferBartModel(AbstractModel):
 
         decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
 
-        result = self.rouge_score.compute(
+        rouge_result = self.rouge_score.compute(
             predictions=decoded_preds,
             references=decoded_labels,
             use_stemmer=True
         )
 
-        result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
-        return {k: round(v, 4) for k, v in result.items()}
+        rouge_result = {key: round(value.mid.fmeasure * 100, 4) for key, value in rouge_result.items()}
+
+        barycenter_result = np.array(BarycenterModel.calculate_texts_barycenter(decoded_preds))
+        barycenter_labels = np.array(self.val_dataset['barycenters'])
+        barycenter_result = {'barycenters': np.mean(np.linalg.norm(barycenter_result - barycenter_labels, axis=1))}
+
+        return rouge_result.update(barycenter_result)

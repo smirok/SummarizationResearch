@@ -5,6 +5,7 @@ import os
 from datasets import Dataset
 
 from dataset import AbstractDataset
+from model.util.barycenter import BarycenterModel
 
 
 class WcepDataset(AbstractDataset):
@@ -32,5 +33,8 @@ class WcepDataset(AbstractDataset):
         articles = list(
             map(lambda x: self.DOC_SEP.join(list(map(lambda y: y['text'], x))),
                 list(map(lambda x: x['articles'], data))))
+        barycenters = list(
+            map(lambda x: BarycenterModel.calculate_texts_barycenter(list(map(lambda y: y['text'], x))),
+                list(map(lambda x: x['articles'], data))))
 
-        return Dataset.from_dict({'articles': articles, 'summaries': summaries})
+        return Dataset.from_dict({'articles': articles, 'summaries': summaries, 'barycenters': barycenters})

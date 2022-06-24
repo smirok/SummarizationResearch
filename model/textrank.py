@@ -1,4 +1,6 @@
 from datasets import Dataset
+from tqdm import tqdm
+
 from model import AbstractModel
 from summa.summarizer import summarize
 from transformers import AutoTokenizer
@@ -40,6 +42,6 @@ class TextRankModel(AbstractModel):
 
         if self.max_source_length is not None:
             return [summarize(article, words=self.max_target_length) for article in
-                    self.test_dataset['articles']]
+                    tqdm(self.test_dataset['articles'])]
         else:
-            return [summarize(article, words=self.max_target_length) for article in self.test_dataset['articles']]
+            return [summarize(article, words=self.max_target_length) for article in tqdm(self.test_dataset['articles'])]
