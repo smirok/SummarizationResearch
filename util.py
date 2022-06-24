@@ -1,7 +1,10 @@
+import numpy as np
 from datasets import load_metric
 from nltk import sent_tokenize
 
 import nltk
+
+from model.util.barycenter import BarycenterModel
 
 nltk.download("punkt")
 
@@ -16,21 +19,33 @@ def postprocess_text(preds, labels):
     return preds, labels
 
 
-def compute_metrics(preds, labels):
+def compute_metrics(preds, labels, val_dataset):
     rouge_score = load_metric("rouge")
     preds, labels = postprocess_text(preds, labels)
 
-    # Compute ROUGE scores
-    result = rouge_score.compute(
-        predictions=preds, references=labels, use_stemmer=True
+    rouge_result = rouge_score.compute(
+        predictions=preds,
+        references=labels,
+        use_stemmer=True
     )
-    # Extract the median scores
-    result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
-    return {k: round(v, 4) for k, v in result.items()}
+
+    rouge_result = {key: round(value.mid.fmeasure * 100, 4) for key, value in rouge_result.items()}
+
+    barycenter_result = np.array(BarycenterModel.calculate_texts_barycenter(preds))
+    barycenter_labels = np.array(val_dataset['barycenters'])
+    barycenter_result = {'barycenters': np.mean(np.linalg.norm(barycenter_result - barycenter_labels, axis=1))}
+
+    return rouge_result.update(barycenter_result)
 
 
 def delete_last_sep(example):
     example['document'] = example['document'][:-5]
+    return example
+
+
+def add_barycenter(example, doc_sep):
+    articles = example['articles'].split(doc_sep)
+    example['barycenters'] = BarycenterModel.calculate_texts_barycenter(articles)
     return example
 
 
